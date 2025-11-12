@@ -1,0 +1,27 @@
+{
+  "properties": [
+    {
+      "name": "app.api.key",
+      "type": "java.lang.String",
+      "description": "Clave secreta utilizada para la autenticación entre microservicios. Debe enviarse en el encabezado HTTP 'X-API-KEY' en cada solicitud. Se recomienda definirla como variable de entorno (APP_API_KEY)."
+    },
+    {
+      "name": "springdoc.swagger-ui.path",
+      "type": "java.lang.String",
+      "description": "Ruta personalizada del panel Swagger UI para la documentación de la API. Por defecto, se accede en '/swagger-ui.html'.",
+      "defaultValue": "/swagger-ui.html"
+    },
+    {
+      "name": "springdoc.api-docs.path",
+      "type": "java.lang.String",
+      "description": "Ruta donde se exponen los documentos OpenAPI generados por SpringDoc. Por defecto, está disponible en '/v3/api-docs'.",
+      "defaultValue": "/v3/api-docs"
+    },
+    {
+      "name": "springdoc.swagger-ui.operationsSorter",
+      "type": "java.lang.String",
+      "description": "Define el orden en que se muestran los endpoints en Swagger UI. Valores válidos: 'alpha' (orden alfabético) o 'method' (orden por método HTTP).",
+      "defaultValue": "method"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:${MYSQL_VERSION}
+    container_name: ${ENV}_mysql
+    restart: unless-stopped
+    env_file: ./env/.env.dev
+    ports:
+      - "${MYSQL_HOST_PORT}:${MYSQL_CONTAINER_PORT}"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ./db/${ENV}/mysql-init/00-init-products-db.sql:/docker-entrypoint-initdb.d/00-init-products-db.sql:ro
+      - ./db/${ENV}/mysql-init/01-init-inventory-db.sql:/docker-entrypoint-initdb.d/01-init-inventory-db.sql:ro
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h localhost -u${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} || exit 1",
+        ]
+      interval: ${DB_HEALTHCHECK_INTERVAL}
+      timeout: ${DB_HEALTHCHECK_TIMEOUT}
+      retries: ${DB_HEALTHCHECK_RETRIES}
+
+  products-service:
+    build:
+      context: ./products-service
+      dockerfile: Dockerfile
+    container_name: ${ENV}_products
+    env_file: ./env/.env.dev
+    environment:
+      DATASOURCE_URL_PRODUCTS: jdbc:mysql://db:${MYSQL_CONTAINER_PORT}/${PRODUCTS_DB}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    ports:
+      - "${SERVER_PORT_PRODUCTS}:${SERVER_PORT_PRODUCTS}"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure:10
+
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: ${ENV}_inventory
+    env_file: ./env/.env.dev
+    ports:
+      - "${SERVER_PORT_INVENTORY}:${SERVER_PORT_INVENTORY}"
+    environment:
+      PRODUCTS_SERVICE_URL: "http://products-service:${SERVER_PORT_PRODUCTS}"
+      DATASOURCE_URL_INVENTORY: jdbc:mysql://db:${MYSQL_CONTAINER_PORT}/${INVENTORY_DB}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    depends_on:
+      db:
+        condition: service_healthy
+      products-service:
+        condition: service_started
+    restart: on-failure:10
+
+  healthchecker:
+    image: curlimages/curl:8.7.1
+    container_name: ${ENV}_healthchecker
+    depends_on:
+      products-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+    entrypoint: >
+      sh -c "
+        echo 'Esperando que products-service esté saludable...';
+        until curl -sf http://products-service:${SERVER_PORT_PRODUCTS}${HEALTH_ENDPOINT}; do sleep 5; done;
+        echo '✅ products-service saludable';
+        echo 'Esperando que inventory-service esté saludable...';
+        until curl -sf http://inventory-service:${SERVER_PORT_INVENTORY}${HEALTH_ENDPOINT}; do sleep 5; done;
+        echo '✅ inventory-service saludable';
+        echo '🚀 Todos los servicios están en línea.';
+      "
+    restart: "no"
+
+volumes:
+  db_data:
