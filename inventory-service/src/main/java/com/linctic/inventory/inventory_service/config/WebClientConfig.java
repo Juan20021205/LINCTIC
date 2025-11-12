@@ -14,7 +14,7 @@ import reactor.netty.http.client.HttpClient;
 @Configuration
 public class WebClientConfig {
 
-    @Value("${app.products-service.url}")
+    @Value("${products.service.url}")
     private String productsServiceUrl;
 
     @Bean

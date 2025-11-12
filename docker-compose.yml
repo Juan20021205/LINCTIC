@@ -69,11 +69,11 @@ services:
       sh -c "
         echo 'Esperando que products-service esté saludable...';
         until curl -sf http://products-service:${SERVER_PORT_PRODUCTS}${HEALTH_ENDPOINT}; do sleep 5; done;
-        echo '✅ products-service saludable';
+        echo 'products-service saludable';
         echo 'Esperando que inventory-service esté saludable...';
         until curl -sf http://inventory-service:${SERVER_PORT_INVENTORY}${HEALTH_ENDPOINT}; do sleep 5; done;
-        echo '✅ inventory-service saludable';
-        echo '🚀 Todos los servicios están en línea.';
+        echo 'inventory-service saludable';
+        echo 'Todos los servicios están en línea.';
       "
     restart: "no"
 
